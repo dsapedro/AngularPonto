@@ -1,0 +1,10 @@
+<div class="container">
+  <h2>Marcação de Ponto</h2>
+  <button (click)="marcarPonto()">Marcar Ponto</button>
+
+  <ul>
+    <li *ngFor="let m of marcacoes">
+      {{ m.dataHora | date: 'dd/MM/yyyy HH:mm:ss' }}
+    </li>
+  </ul>
+</div>
