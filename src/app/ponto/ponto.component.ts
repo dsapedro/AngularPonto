@@ -1,67 +1,51 @@
 import { Component, OnInit } from '@angular/core';
-import { PontoService } from '../ponto.service';
-import { CommonModule, DatePipe } from '@angular/common';
-
-interface Marcacao {
-  dataHora: Date;
-}
+import { CommonModule } from '@angular/common';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-ponto',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, HttpClientModule],
   templateUrl: './ponto.component.html',
   styleUrls: ['./ponto.component.scss']
 })
+export class PontoComponent implements OnInit {
+  marcacoes: any[] = [];
 
-export class PontoComponent {
-  entrada: string = '08:00'; // ponto batido - a ser puxado do banco
-  saidaPrevista: string = '17:00'; // horário final do expediente - a ser puxado do banco
-  progresso: number = 0;
-  horasTrabalhadas: string = '0:00';  
-  marcacoes: { tipo: string, hora: string, periodo: number, origem: string } [] = [];
-  private totalCliques: number = 0;
+  constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.calcularProgresso();
-    this.calcularHorasTrabalhadas();
-
-    // Atualiza a cada minuto
-    setInterval(() => {
-      this.calcularProgresso();
-      this.calcularHorasTrabalhadas();
-    }, 60000);
+    this.carregarMarcacoes();
   }
 
-  marcarPonto(): void {
-    const agora = new Date();
-    const horaAtual = agora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    const tipo = (this.totalCliques % 2 === 0) ? 'Entrada' : 'Saída';
-    const periodo = Math.floor(this.totalCliques / 2) + 1;
-
-    const novaMarcacao = {
-      tipo: `${periodo}ª ${tipo}`,
-      hora: horaAtual,
-      periodo: periodo,
-      origem: this.totalCliques % 2 === 0 ? 'Integrada' : 'Local'
+  marcarPonto() {
+    const marcacao = {
+      usuario: 'Pedro',
+      data: new Date().toISOString(),
+      tipo: 'entrada'
     };
-    
-    this.marcacoes.push(novaMarcacao);
-    this.salvarMarcacoes();
-    
-    if (this.totalCliques === 0) {
-      this.entrada = horaAtual;
-    }
 
-    this.totalCliques++;
-    this.calcularHorasTrabalhadas();
+    this.http.post('http://localhost:3000/marcacoes', marcacao).subscribe({
+      next: () => {
+        alert('Marcação registrada com sucesso!');
+        this.carregarMarcacoes(); // Atualiza a lista após marcar
+      },
+      error: (error) => {
+        console.error('Erro ao registrar marcação', error);
+        alert('Erro ao registrar a marcação. Tente novamente.');
+      }
+    });
   }
 
-  salvarMarcacoes(): void {
-    localStorage.setItem('marcacoes', JSON.stringify(this.marcacoes));
-  }
-
+  carregarMarcacoes() {
+    this.http.get<any[]>('http://localhost:3000/marcacoes').subscribe({
+      next: (dados) => {
+        this.marcacoes = dados;
+      },
+      error: (error) => {
+        console.error('Erro ao carregar marcações', error);
+      }
+    });
   calcularProgresso(): void {
     const inicio = this.horaStringParaDate('08:00');
     const fim = this.horaStringParaDate(this.saidaPrevista);
