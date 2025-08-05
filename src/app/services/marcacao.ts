@@ -8,7 +8,7 @@ import { Marcacao } from './marcacao.model';
   providedIn: 'root'
 })
 export class MarcacaoService {
-  private readonly API_URL = 'http://localhost:3000/marcacoes';
+  private readonly API_URL = 'https://apimock-oaip.onrender.com/marcacoes';
 
   private _marcacoes = new BehaviorSubject<Marcacao[]>([]);
   public readonly marcacoes$ = this._marcacoes.asObservable();
