@@ -1,7 +1,6 @@
 <div class="container">
   <h2>Marcação de Ponto</h2>
   <button (click)="marcarPonto()">Marcar ponto</button>
-
   <ul>
     <li *ngFor="let m of marcacoes$ | async">
       {{ m.usuario }} - {{ m.data | date:'dd/MM/yyyy HH:mm:ss' }} ({{ m.origem }})
