@@ -40,7 +40,10 @@ export class PontoComponent implements OnInit {
   carregarMarcacoes() {
     this.http.get<any[]>('https://apimock-oaip.onrender.com/marcacoes').subscribe({
       next: (dados) => {
-        this.marcacoes = dados;
+        this.marcacoes = dados.map(m => ({
+          ...m,
+          data: new Date(m.data)  // <- conversão importante
+        }));
       },
       error: (error) => {
         console.error('Erro ao carregar marcações', error);
