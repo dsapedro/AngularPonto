@@ -25,7 +25,7 @@ export class PontoComponent implements OnInit {
       tipo: 'entrada'
     };
 
-    this.http.post('http://localhost:3000/marcacoes', marcacao).subscribe({
+    this.http.post('https://apimock-oaip.onrender.com/marcacoes', marcacao).subscribe({
       next: () => {
         alert('Marcação registrada com sucesso!');
         this.carregarMarcacoes(); // Atualiza a lista após marcar
@@ -38,7 +38,7 @@ export class PontoComponent implements OnInit {
   }
 
   carregarMarcacoes() {
-    this.http.get<any[]>('http://localhost:3000/marcacoes').subscribe({
+    this.http.get<any[]>('https://apimock-oaip.onrender.com/marcacoes').subscribe({
       next: (dados) => {
         this.marcacoes = dados;
       },
