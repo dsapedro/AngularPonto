@@ -4,7 +4,7 @@
 
   <ul *ngIf="marcacoes.length > 0">
     <li *ngFor="let m of marcacoes">
-      {{ m.usuario }} - {{ m.tipo }} - {{ m.data | date:'short' }}
+      {{ m.data ? (m.data | date:'short') : 'Data inválida' }} - {{ m.tipo || 'tipo?' }} ({{ m.origem || 'origem?' }})
     </li>
   </ul>
 
