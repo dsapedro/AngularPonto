@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
-import { RouterOutlet, Routes } from '@angular/router';
+import { RouterOutlet, Routes} from '@angular/router';
 import { PontoComponent } from './ponto/ponto.component';
 import { PwaInstallService } from './pwa-install.service';
 import { CommonModule } from '@angular/common';
-
+import { HttpClientModule } from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet,CommonModule],
+  imports: [RouterOutlet,CommonModule,HttpClientModule],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
