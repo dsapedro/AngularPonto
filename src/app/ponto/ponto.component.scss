@@ -1,15 +1,139 @@
 .container {
-  padding: 2rem;
-  text-align: center;
+  padding: 16px;
+  font-family: Arial, sans-serif;
+}
 
-  button {
-    margin-bottom: 1rem;
-    padding: 0.5rem 1rem;
-    font-size: 1.2rem;
-  }
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-  ul {
-    list-style: none;
-    padding: 0;
-  }
+.back-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.cards {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  gap: 10px;
+}
+
+.card {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.progress {
+  margin-top: 8px;
+}
+
+.progress-bar {
+  background: #eee;
+  border-radius: 4px;
+  height: 10px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: green;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.saida-prevista {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.horas {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.btn-principal {
+  background-color: #465494;
+  color: white;
+  border: none;
+  width: 100%;
+  padding: 12px;
+  margin: 20px 0;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.subtitulo {
+  margin-top: 20px;
+}
+
+.marcacao {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  padding: 10px 0;
+}
+
+.info .tipo {
+  font-weight: bold;
+}
+
+.info .entrada {
+  color: green;
+}
+
+.info .saida {
+  color: orange;
+}
+
+.status.integrada {
+  color: green;
+}
+
+.status.local {
+  color: orange;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: white;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.icon {
+  position: relative;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+.notificacao .badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  border-radius: 50%;
+  padding: 2px 6px;
 }

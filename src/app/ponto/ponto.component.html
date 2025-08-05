@@ -1,10 +1,47 @@
-<div class="container">
+<div class="header">
+  <button class="back-button">←</button>
   <h2>Marcação de Ponto</h2>
-  <button (click)="marcarPonto()">Marcar Ponto</button>
+</div>
 
-  <ul>
-    <li *ngFor="let m of marcacoes">
-      {{ m.dataHora | date: 'dd/MM/yyyy HH:mm:ss' }}
-    </li>
-  </ul>
+<!-- Cartões superiores -->
+<div class="cards">
+  <div class="card">
+    <h4>Hoje</h4>
+    <div class="progress">
+      <label>Progresso</label>
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progresso"></div>
+      </div>
+      <div class="saida-prevista">Saída prevista <strong>{{ saidaPrevista }}</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Horas trabalhadas</h4>
+    <div class="horas">{{ horasTrabalhadas }}</div>
+  </div>
+</div>
+
+<!-- Botão principal -->
+<button class="btn-principal" (click)="marcarPonto()">Marcar Ponto</button>
+
+<!-- Lista de marcações -->
+<h4 class="subtitulo">Marcações realizadas</h4>
+<hr />
+<div class="marcacao" *ngFor="let m of marcacoes">
+  <div class="info">
+    <div class="tipo" [ngClass]="{ entrada: m.tipo.includes('Entrada'), saida: m.tipo.includes('Saída') }">{{ m.tipo }}</div>
+    <div class="hora">{{ m.hora }}</div>
+  </div>
+  <div class="status" [ngClass]="{ integrada: m.origem === 'Integrada', local: m.origem === 'Local' }">
+    {{ m.origem === 'Integrada' ? '✔️ Integrada' : '📍 Local' }}
+  </div>
+</div>
+
+<!-- Rodapé -->
+<div class="footer">
+  <div class="icon">📊</div>
+  <div class="icon">💬</div>
+  <div class="icon notificacao">🔔</div>
+  <div class="icon">☰</div>
 </div>
