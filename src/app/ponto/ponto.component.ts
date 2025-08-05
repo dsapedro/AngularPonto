@@ -1,53 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { MarcacaoService } from '../services/marcacao';
+import { Observable } from 'rxjs';
+import { Marcacao } from '../services/marcacao.model';
 
 @Component({
   selector: 'app-ponto',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule],
   templateUrl: './ponto.component.html',
   styleUrls: ['./ponto.component.scss']
 })
 export class PontoComponent implements OnInit {
-  marcacoes: any[] = [];
+  marcacoes$!: Observable<Marcacao[]>;
 
-  constructor(private http: HttpClient) {}
+  constructor(private marcacaoService: MarcacaoService) {}
 
   ngOnInit(): void {
-    this.carregarMarcacoes();
+    this.marcacoes$ = this.marcacaoService.marcacoes$;
   }
 
   marcarPonto() {
-    const marcacao = {
-      usuario: 'Pedro',
-      data: new Date().toISOString(),
-      tipo: 'entrada'
-    };
-
-    this.http.post('https://apimock-oaip.onrender.com/marcacoes', marcacao).subscribe({
-      next: () => {
-        alert('Marcação registrada com sucesso!');
-        this.carregarMarcacoes(); // Atualiza a lista após marcar
-      },
-      error: (error) => {
-        console.error('Erro ao registrar marcação', error);
-        alert('Erro ao registrar a marcação. Tente novamente.');
-      }
-    });
-  }
-
-  carregarMarcacoes() {
-    this.http.get<any[]>('https://apimock-oaip.onrender.com/marcacoes').subscribe({
-      next: (dados) => {
-        this.marcacoes = dados.map(m => ({
-          ...m,
-          data: new Date(m.data)  // <- conversão importante
-        }));
-      },
-      error: (error) => {
-        console.error('Erro ao carregar marcações', error);
-      }
-    });
+    this.marcacaoService.marcarPonto();
   }
 }
