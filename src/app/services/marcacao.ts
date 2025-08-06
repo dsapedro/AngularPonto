@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
 import { Marcacao } from './marcacao.model';
-
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -28,14 +28,14 @@ export class MarcacaoService {
     });
   }
 
-  marcarPonto() {
+  marcarPonto(usuario: string, data: string, hora: string, tipo: string) {
     const novaMarcacao: Marcacao = {
-      usuario: 'Pedro',
-      data: new Date().toISOString(),
-      tipo: 'entrada',
+      usuario: usuario,
+      data: data,
+      hora: hora,
+      tipo: tipo,
       origem: this.isOnline ? 'online' : 'offline'
     };
-
 
     if (this.isOnline) {
       this.enviarMarcacao(novaMarcacao);
@@ -84,4 +84,9 @@ export class MarcacaoService {
     localStorage.removeItem('marcacoes_pendentes');
     alert('Marcações pendentes sincronizadas.');
   }
+
+  buscarMarcacoes(): Observable<Marcacao[]> {
+    return this.http.get<Marcacao[]>(this.API_URL);
+  }
+
 }

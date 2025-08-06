@@ -30,11 +30,13 @@
 <hr />
 <div class="marcacao" *ngFor="let m of marcacoes">
   <div class="info">
-    <div class="tipo" [ngClass]="{ entrada: m.tipo.includes('Entrada'), saida: m.tipo.includes('Saída') }">{{ m.tipo }}</div>
+    <div class="tipo" [ngClass]="{ entrada: m.tipo.includes('Entrada'), saida: m.tipo.includes('Saída') }">
+      {{ m.tipo }}
+    </div>
     <div class="hora">{{ m.hora }}</div>
   </div>
-  <div class="status" [ngClass]="{ integrada: m.origem === 'Integrada', local: m.origem === 'Local' }">
-    {{ m.origem === 'Integrada' ? '✔️ Integrada' : '📍 Local' }}
+  <div class="status" [ngClass]="{ integrada: m.origem === 'Integrada', local: m.origem === 'Local', online: m.origem === 'online' }">
+    {{ m.origem === 'online' ? '✔️ Integrada' : m.origem === 'offline' ? '📍 Local' : '🌐 Online' }}
   </div>
 </div>
 

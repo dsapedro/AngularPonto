@@ -17,18 +17,18 @@ export class PontoComponent implements OnInit {
   saidaPrevista: string = '17:00';
   progresso: number = 0;
   horasTrabalhadas: string = '0:00';
-  marcacoes: { usuario: string, tipo: string, hora: string, periodo: number, origem: string } [] = [];
+  marcacoes: { usuario: string, data:string, hora: string, tipo: string, origem: string } [] = [];
   private totalCliques: number = 0;
-  constructor(private http: HttpClient) {}
   marcacoes$!: Observable<Marcacao[]>;
+  usuario: string = 'Henrique';
 
   constructor(private marcacaoService: MarcacaoService) {}
 
   ngOnInit(): void {
     this.marcacoes$ = this.marcacaoService.marcacoes$;
-    this.carregarMarcacoes();
     this.calcularProgresso();
     this.calcularHorasTrabalhadas();
+    this.carregarMarcacoes();
 
     setInterval(() => {
       this.calcularHorasTrabalhadas();
@@ -37,58 +37,20 @@ export class PontoComponent implements OnInit {
   }
 
   marcarPonto() {
-    this.marcacaoService.marcarPonto();
-    const agora = new Date();
-    const horaAtual = agora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
+    const dtAtual = new Date();
+    const horaAtual = dtAtual.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const tipo = (this.totalCliques % 2 === 0) ? 'Entrada' : 'Saída';
-    const periodo = Math.floor(this.totalCliques / 2) + 1;
 
-    const marcacao = {
-      usuario: 'Henrique',
-      data: horaAtual,
-      hora: horaAtual,
-      tipo: tipo
-    };
-
-    const novaMarcacao = {
-      usuario: 'Henrique',
-      tipo: `${periodo}ª ${tipo}`,
-      hora: horaAtual,
-      periodo: periodo,
-      origem: this.totalCliques % 2 === 0 ? 'Integrada' : 'Local'
-    };
+    this.marcacaoService.marcarPonto(this.usuario, dtAtual.toDateString(), horaAtual, tipo);
     
-    this.http.post('https://apimock-oaip.onrender.com/marcacoes', marcacao).subscribe({
-      next: () => {
-        alert('Marcação registrada com sucesso!');
-        this.carregarMarcacoes(); // Atualiza a lista após marcar
-      },
-      error: (error) => {
-        console.error('Erro ao registrar marcação', error);
-        alert('Erro ao registrar a marcação. Tente novamente.');
-      }
-    });
-
-    this.marcacoes.push(novaMarcacao);
-
     if (this.totalCliques === 0) {
       this.entrada = horaAtual;
     }
 
     this.totalCliques++;
-    this.calcularHorasTrabalhadas();
-  }
-
-  carregarMarcacoes() {
-    this.http.get<any[]>('https://apimock-oaip.onrender.com/marcacoes').subscribe({
-      next: (dados) => {
-        this.marcacoes = dados.filter(a => a.usuario === 'Henrique');
-      },
-      error: (error) => {
-        console.error('Erro ao carregar marcações', error);
-      }
-    });
+    //this.calcularHorasTrabalhadas();
+    //this.calcularProgresso();
+    this.carregarMarcacoes()
   }
 
   calcularProgresso(): void {
@@ -124,5 +86,20 @@ export class PontoComponent implements OnInit {
     const agora = new Date();
     agora.setHours(h, m, 0, 0);
     return agora;
+  }
+
+  carregarMarcacoes(): void {
+    const dtAtual = new Date();
+    this.marcacaoService.buscarMarcacoes().subscribe(
+      (dados) => {
+        this.marcacoes = dados.map(m => ({
+          ...m,
+        }))
+        .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).filter(m => m.usuario == this.usuario && m.data == dtAtual.toDateString());
+      },
+      (erro) => {
+        console.error('Erro ao buscar marcações:', erro);
+      }
+    );
   }
 }
