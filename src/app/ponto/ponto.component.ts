@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { MarcacaoService } from '../services/marcacao';
+import { Observable } from 'rxjs';
+import { Marcacao } from '../services/marcacao.model';
 
 @Component({
   selector: 'app-ponto',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule],
   templateUrl: './ponto.component.html',
   styleUrls: ['./ponto.component.scss']
 })
@@ -18,8 +20,12 @@ export class PontoComponent implements OnInit {
   marcacoes: { usuario: string, tipo: string, hora: string, periodo: number, origem: string } [] = [];
   private totalCliques: number = 0;
   constructor(private http: HttpClient) {}
+  marcacoes$!: Observable<Marcacao[]>;
+
+  constructor(private marcacaoService: MarcacaoService) {}
 
   ngOnInit(): void {
+    this.marcacoes$ = this.marcacaoService.marcacoes$;
     this.carregarMarcacoes();
     this.calcularProgresso();
     this.calcularHorasTrabalhadas();
@@ -31,6 +37,7 @@ export class PontoComponent implements OnInit {
   }
 
   marcarPonto() {
+    this.marcacaoService.marcarPonto();
     const agora = new Date();
     const horaAtual = agora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
