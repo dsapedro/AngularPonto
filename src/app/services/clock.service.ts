@@ -20,6 +20,10 @@ export class ClockService {
     this._deltaMs$.next(delta);
     try { localStorage.setItem(LS_KEY, String(delta)); } catch {}
   }
+  setDeltaForTest(ms: number) {
+    this._deltaMs$.next(ms);
+    try { localStorage.setItem('server_clock_delta_ms', String(ms)); } catch {}
+  }
 
   isWithin(msTolerance: number): boolean {
     const d = this.deltaMs;

@@ -32,6 +32,7 @@ export class PontoComponent implements OnInit {
     private clock: ClockService) {}
 
   ngOnInit(): void {
+    (window as any).clock = this.clock;
     this.marcacoes$ = this.marcacaoService.marcacoes$;
     this.calcularProgresso();
     this.calcularHorasTrabalhadas();
@@ -53,8 +54,6 @@ export class PontoComponent implements OnInit {
     const dtAtual = new Date();
     const horaAtual = dtAtual.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const tipo = (this.totalCliques % 2 === 0) ? 'Entrada' : 'Saída';
-
-    this.marcacaoService.marcarPonto(this.usuario, dtAtual.toDateString(), horaAtual, tipo);
     
     let position: GeolocationPosition | null = null;
     try {
