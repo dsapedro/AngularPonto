@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { MarcacaoService } from '../services/marcacao';
 import { Observable } from 'rxjs';
 import { Marcacao } from '../services/marcacao.model';
+import { GeolocService } from '../services/geoloc.service';
+import { DEFAULT_GEOFENCE_ID } from '../geofence.config';
+import { ClockService } from '../services/clock.service';
 
 @Component({
   selector: 'app-ponto',
@@ -21,8 +24,12 @@ export class PontoComponent implements OnInit {
   private totalCliques: number = 0;
   marcacoes$!: Observable<Marcacao[]>;
   usuario: string = 'Henrique';
+  agrupadorId = DEFAULT_GEOFENCE_ID;
+  private readonly CLOCK_TOLERANCE_MS = 2 * 60 * 1000;
 
-  constructor(private marcacaoService: MarcacaoService) {}
+  constructor(private marcacaoService: MarcacaoService,
+    private geoloc: GeolocService,
+    private clock: ClockService) {}
 
   ngOnInit(): void {
     this.marcacoes$ = this.marcacaoService.marcacoes$;
@@ -36,13 +43,57 @@ export class PontoComponent implements OnInit {
     }, 60000);
   }
 
-  marcarPonto() {
+  async marcarPonto() {
+    if (!this.clock.isWithin(this.CLOCK_TOLERANCE_MS)) {
+      const delta = this.clock.deltaMs!;
+      const deltaMin = Math.round(Math.abs(delta) / 60000);
+      alert(`Relógio do dispositivo desvia ${deltaMin} min do servidor. Ajuste o relógio/fuso e tente novamente.`);
+      return;
+    }
     const dtAtual = new Date();
     const horaAtual = dtAtual.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const tipo = (this.totalCliques % 2 === 0) ? 'Entrada' : 'Saída';
 
     this.marcacaoService.marcarPonto(this.usuario, dtAtual.toDateString(), horaAtual, tipo);
     
+    let position: GeolocationPosition | null = null;
+    try {
+      position = await this.geoloc.getCurrentPosition(true, 12000);
+    } catch (e1) {
+      // fallback sem alta precisão
+      try {
+        position = await this.geoloc.getCurrentPosition(false, 8000);
+      } catch (e2) {
+        alert('Não foi possível obter sua localização. Verifique permissões de localização.');
+        return;
+      }
+    }
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const acc = position.coords.accuracy; 
+    // 3) validar cerca circular
+    const { ok, distance, gf } = this.geoloc.isInsideGeofence(lat, lng, this.agrupadorId);
+    if (!ok) {
+      const msg = gf
+        ? `Você está fora da área permitida (${Math.round(distance)} m > ${gf.radiusMeters} m).`
+        : 'Configuração de cerca não encontrada.';
+      alert(msg);
+      return; // bloqueia marcação
+    }
+
+    // 4) checar timezone esperado (só aviso no MVP)
+    const deviceTz = this.geoloc.deviceTimeZone();
+    const expectedTz = gf?.expectedTimeZone;
+    if (expectedTz && deviceTz !== expectedTz) {
+      // Para o MVP, apenas alertar; depois podemos bloquear se desejarem
+      alert(`Atenção: seu fuso é ${deviceTz}, mas o esperado é ${expectedTz}.`);
+      // (se quiser bloquear, descomente a linha abaixo)
+      // return;
+    }
+    // 5) seguir com a marcação (mantendo sua lógica atual)
+    this.marcacaoService.marcarPonto(this.usuario, dtAtual.toDateString(), horaAtual, tipo, {
+      lat, lng, accuracyMeters: acc, timeZone: deviceTz, agrupadorId: this.agrupadorId
+    } as any); // cast só porque o método original não aceita extras ainda
     if (this.totalCliques === 0) {
       this.entrada = horaAtual;
     }
@@ -89,17 +140,19 @@ export class PontoComponent implements OnInit {
   }
 
   carregarMarcacoes(): void {
-    const dtAtual = new Date();
-    this.marcacaoService.buscarMarcacoes().subscribe(
-      (dados) => {
-        this.marcacoes = dados.map(m => ({
-          ...m,
-        }))
-        .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()).filter(m => m.usuario == this.usuario && m.data == dtAtual.toDateString());
-      },
-      (erro) => {
-        console.error('Erro ao buscar marcações:', erro);
-      }
-    );
-  }
+  const dtAtual = new Date().toDateString();
+
+  this.marcacaoService.buscarMarcacoes().subscribe({
+    next: (dados) => {
+      this.marcacoes = dados
+        .filter(m => m.usuario === this.usuario && m.data === dtAtual)
+        .sort((a, b) => {
+          const da = new Date(`${a.data} ${a.hora}`).getTime();
+          const db = new Date(`${b.data} ${b.hora}`).getTime();
+          return db - da;
+        });
+    },
+    error: (erro) => console.error('Erro ao buscar marcações:', erro)
+  });
+}
 }

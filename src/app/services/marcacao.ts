@@ -1,14 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Marcacao } from './marcacao.model';
-import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class MarcacaoService {
-  private readonly API_URL = 'https://apimock-oaip.onrender.com/marcacoes';
+  private readonly API_URL = environment.apiUrl;
 
   private _marcacoes = new BehaviorSubject<Marcacao[]>([]);
   public readonly marcacoes$ = this._marcacoes.asObservable();
@@ -18,37 +16,44 @@ export class MarcacaoService {
   constructor(private http: HttpClient) {
     window.addEventListener('online', () => this.syncMarcacoes());
     window.addEventListener('offline', () => this.isOnline = false);
-
     this.carregarMarcacoesIniciais();
   }
 
   private carregarMarcacoesIniciais() {
-    this.http.get<any[]>(this.API_URL).subscribe(data => {
-      this._marcacoes.next(data);
+    this.http.get<Marcacao[]>(this.API_URL).subscribe(data => {
+      this._marcacoes.next(
+        data.map(m => ({ ...m, data: m.data })) // ajuste aqui se usar dataUtc no futuro
+      );
     });
   }
 
-  marcarPonto(usuario: string, data: string, hora: string, tipo: string) {
-    const novaMarcacao: Marcacao = {
-      usuario: usuario,
-      data: data,
-      hora: hora,
-      tipo: tipo,
-      origem: this.isOnline ? 'online' : 'offline'
-    };
+  marcarPonto(
+  usuario: string,
+  data: string,
+  hora: string,
+  tipo: string,
+  extras?: Partial<Pick<Marcacao, 'lat' | 'lng' | 'accuracyMeters' | 'timeZone' | 'agrupadorId'>>
+) {
+  const novaMarcacao: Marcacao = {
+    usuario,
+    data,
+    hora,
+    tipo,
+    origem: this.isOnline ? 'online' : 'offline',
+    ...(extras ?? {})
+  };
 
-    if (this.isOnline) {
-      this.enviarMarcacao(novaMarcacao);
-    } else {
-      this.salvarMarcacaoLocal(novaMarcacao);
-      alert('Você está offline. Marcação salva localmente.');
-    }
-
-    const atual = this._marcacoes.value;
-    this._marcacoes.next([...atual, novaMarcacao]);
+  if (this.isOnline) {
+    this.enviarMarcacao(novaMarcacao);
+  } else {
+    this.salvarMarcacaoLocal(novaMarcacao);
+    alert('Você está offline. Marcação salva localmente.');
   }
 
-  private enviarMarcacao(marcacao: any) {
+  this._marcacoes.next([...this._marcacoes.value, novaMarcacao]);
+}
+
+  private enviarMarcacao(marcacao: Marcacao) {
     this.http.post(this.API_URL, marcacao).subscribe({
       next: () => console.log('Marcação enviada'),
       error: () => {
@@ -59,9 +64,9 @@ export class MarcacaoService {
     });
   }
 
-  private salvarMarcacaoLocal(marcacao: any) {
+  private salvarMarcacaoLocal(m: Marcacao) {
     const pendentes: Marcacao[] = JSON.parse(localStorage.getItem('marcacoes_pendentes') || '[]');
-    pendentes.push(marcacao);
+    pendentes.push(m);
     localStorage.setItem('marcacoes_pendentes', JSON.stringify(pendentes));
   }
 
@@ -74,8 +79,7 @@ export class MarcacaoService {
       this.http.post(this.API_URL, m).subscribe({
         next: () => {
           m.origem = 'sincronizado';
-          const atual = this._marcacoes.value;
-          this._marcacoes.next([...atual, m]);
+          this._marcacoes.next([...this._marcacoes.value, m]);
         },
         error: () => console.error('Falha ao sincronizar marcação')
       });
@@ -84,9 +88,7 @@ export class MarcacaoService {
     localStorage.removeItem('marcacoes_pendentes');
     alert('Marcações pendentes sincronizadas.');
   }
-
   buscarMarcacoes(): Observable<Marcacao[]> {
     return this.http.get<Marcacao[]>(this.API_URL);
   }
-
 }
