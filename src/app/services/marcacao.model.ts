@@ -4,4 +4,9 @@ export interface Marcacao {
   hora: string;
   tipo: string;
   origem: 'online' | 'offline' | 'sincronizado';
+  lat?: number;
+  lng?: number;
+  accuracyMeters?: number;
+  timeZone?: string;
+  agrupadorId?: string;
 }
