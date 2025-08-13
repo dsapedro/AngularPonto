@@ -23,7 +23,7 @@ export class PontoComponent implements OnInit {
   saidaPrevista: string = '17:00';
   progresso: number = 0;
   horasTrabalhadas: string = '0:00';
-  marcacoes: { usuario: string, data:string, hora: string, tipo: string, origem: string } [] = [];
+  marcacoes: Marcacao[] = [];
   private totalCliques: number = 0;
   marcacoes$!: Observable<Marcacao[]>;
   usuario: string = 'Henrique';
