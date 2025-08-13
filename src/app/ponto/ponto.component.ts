@@ -37,23 +37,15 @@ export class PontoComponent implements OnInit {
   
   private async syncClockWithServer(): Promise<void> {
   try {
-    // Deriva a base da API removendo o sufixo "/marcacoes" caso exista
     const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
-    // Chama /time e desabilita cache (e coloca um bust "t")
     const t = await firstValueFrom(
       this.http.get<{ serverIso: string; serverEpochMs: number }>(
         `${base}/time`,
-        {
-          headers: { 'Cache-Control': 'no-store' } as any,
-          params: { t: Date.now().toString() }
-        }
+        { params: { t: Date.now().toString() } } 
       )
     );
-    // delta = horaServidor - horaDoDispositivoAgora
     const delta = t.serverEpochMs - Date.now();
     this.clock.setDeltaForTest(delta);
-
-    // (opcional de depuração)
     (window as any).clockDeltaLast = { server: t.serverIso, serverMs: t.serverEpochMs, delta };
     console.log('[clock] sync /time:', t.serverIso, 'delta(ms):', delta);
   } catch (e) {
