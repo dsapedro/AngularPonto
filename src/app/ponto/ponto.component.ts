@@ -36,22 +36,31 @@ export class PontoComponent implements OnInit {
     private http: HttpClient) {}
   
   private async syncClockWithServer(): Promise<void> {
-    try {
-      const resp = await firstValueFrom(
-        this.http.get(environment.apiUrl, {
-          // pegamos os headers da resposta
-          observe: 'response' as const,
-          // dica pra evitar cache do navegador/intermediários
-          headers: { 'Cache-Control': 'no-store' } as any
-        })
-      );
-      const dateHeader = resp.headers.get('Date') ?? resp.headers.get('date');
-      this.clock.setFromServerDateHeader(dateHeader);
-    } catch (e) {
-      // se falhar, não bloqueamos — seguimos com delta anterior
-      console.warn('Falha ao sincronizar relógio com servidor', e);
-    }
+  try {
+    // Deriva a base da API removendo o sufixo "/marcacoes" caso exista
+    const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
+    // Chama /time e desabilita cache (e coloca um bust "t")
+    const t = await firstValueFrom(
+      this.http.get<{ serverIso: string; serverEpochMs: number }>(
+        `${base}/time`,
+        {
+          headers: { 'Cache-Control': 'no-store' } as any,
+          params: { t: Date.now().toString() }
+        }
+      )
+    );
+    // delta = horaServidor - horaDoDispositivoAgora
+    const delta = t.serverEpochMs - Date.now();
+    this.clock.setDeltaForTest(delta);
+
+    // (opcional de depuração)
+    (window as any).clockDeltaLast = { server: t.serverIso, serverMs: t.serverEpochMs, delta };
+    console.log('[clock] sync /time:', t.serverIso, 'delta(ms):', delta);
+  } catch (e) {
+    console.warn('Falha ao sincronizar com /time; mantendo delta atual.', e);
   }
+}
+
 
 
   ngOnInit(): void {
