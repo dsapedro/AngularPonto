@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { BehaviorSubject, Observable, catchError, retry, timeout, throwError } from 'rxjs';
 import { Marcacao } from './marcacao.model';
 import { environment } from '../../environments/environment';
 
@@ -20,7 +20,7 @@ export class MarcacaoService {
   }
 
   private carregarMarcacoesIniciais() {
-    this.http.get<Marcacao[]>(this.API_URL).subscribe({
+    this.buscarMarcacoes().subscribe({
       next: (data) => this._marcacoes.next(data ?? []),
       error: (err) => {
         console.warn('Falha ao carregar marcações iniciais', err);
@@ -29,11 +29,6 @@ export class MarcacaoService {
     });
   }
 
-  /**
-   * Registrar marcação.
-   * Agora NÃO recebe mais data/hora do cliente (o servidor define o horário oficial).
-   * Envie apenas usuario, tipo e (opcionais) lat/lng/accuracy/timeZone/agrupadorId.
-   */
   marcarPonto(
     usuario: string,
     tipo: string,
@@ -47,21 +42,16 @@ export class MarcacaoService {
     };
 
     if (this.isOnline) {
-      // POST e usa a RESPOSTA do servidor para atualizar a lista
       this.http.post<Marcacao>(this.API_URL, body).subscribe({
-        next: (salva) => {
-          this._marcacoes.next([...this._marcacoes.value, salva]);
-        },
+        next: (salva) => this._marcacoes.next([...this._marcacoes.value, salva]),
         error: (err) => {
           console.error('Erro ao enviar. Salvando localmente.', err);
-          // Marca como offline e persiste local
           body.origem = 'offline';
           this.salvarMarcacaoLocal(body as Marcacao);
           alert('Falha ao enviar. Marcação salva localmente.');
         },
       });
     } else {
-      // Offline: salva local e reflete na UI
       this.salvarMarcacaoLocal(body as Marcacao);
       alert('Você está offline. Marcação salva localmente.');
     }
@@ -71,7 +61,6 @@ export class MarcacaoService {
     const pendentes: Marcacao[] = JSON.parse(localStorage.getItem('marcacoes_pendentes') || '[]');
     pendentes.push(m);
     localStorage.setItem('marcacoes_pendentes', JSON.stringify(pendentes));
-    // Reflete na UI imediatamente (sem horário oficial do servidor)
     this._marcacoes.next([...this._marcacoes.value, m]);
   }
 
@@ -85,7 +74,6 @@ export class MarcacaoService {
     pendentes.forEach((m) => {
       this.http.post<Marcacao>(this.API_URL, m).subscribe({
         next: (salva) => {
-          // Usa a resposta do servidor para normalizar o registro
           this._marcacoes.next([...this._marcacoes.value, salva]);
         },
         error: (err) => {
@@ -104,6 +92,15 @@ export class MarcacaoService {
   }
 
   buscarMarcacoes(): Observable<Marcacao[]> {
-    return this.http.get<Marcacao[]>(this.API_URL);
+    const headers = new HttpHeaders({ 'Cache-Control': 'no-store' });
+    const params = new HttpParams().set('t', String(Date.now())); // cache-busting
+    return this.http.get<Marcacao[]>(this.API_URL, { headers, params }).pipe(
+      timeout(4000),
+      retry(1),
+      catchError(err => {
+        console.error('GET /marcacoes falhou', err);
+        return throwError(() => err);
+      })
+    );
   }
 }
