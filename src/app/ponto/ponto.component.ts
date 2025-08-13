@@ -115,9 +115,9 @@ export class PontoComponent implements OnInit {
       // return;
     }
     // 5) seguir com a marcação (mantendo sua lógica atual)
-    this.marcacaoService.marcarPonto(this.usuario, dtAtual.toDateString(), horaAtual, tipo, {
+    this.marcacaoService.marcarPonto(this.usuario, tipo, {
       lat, lng, accuracyMeters: acc, timeZone: deviceTz, agrupadorId: this.agrupadorId
-    } as any); // cast só porque o método original não aceita extras ainda
+    }); // cast só porque o método original não aceita extras ainda
     if (this.totalCliques === 0) {
       this.entrada = horaAtual;
     }
