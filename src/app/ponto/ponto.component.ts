@@ -36,18 +36,41 @@ export class PontoComponent implements OnInit {
     private http: HttpClient) {}
   
   private async syncClockWithServer(): Promise<void> {
-  try {
-    const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
-    const t = await firstValueFrom(
-      this.http.get<{ serverIso: string; serverEpochMs: number }>(
-        `${base}/time`,
-        { params: { t: Date.now().toString() } } 
-      )
+  const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
+  const url = `${base}/time`;
+
+  const sampleOnce = async () => {
+    const t0 = Date.now();
+    const resp = await firstValueFrom(
+      this.http.get<{ serverIso: string; serverEpochMs: number }>(url, {
+        params: { t: String(t0) } // cache busting
+      })
     );
-    const delta = t.serverEpochMs - Date.now();
+    const t1 = Date.now();
+    const server = resp.serverEpochMs;
+    const midpoint = (t0 + t1) / 2;    // compensa metade da latência
+    return server - midpoint;          // delta estimado
+  };
+
+  try {
+    // 3 amostras rápidas
+    const deltas: number[] = [];
+    deltas.push(await sampleOnce());
+    await new Promise(r => setTimeout(r, 150));
+    deltas.push(await sampleOnce());
+    await new Promise(r => setTimeout(r, 150));
+    deltas.push(await sampleOnce());
+
+    // mediana para ignorar outlier
+    const median = (arr: number[]) => {
+      const a = [...arr].sort((x, y) => x - y);
+      return a[Math.floor(a.length / 2)];
+    };
+    const delta = median(deltas);
+
     this.clock.setDeltaForTest(delta);
-    (window as any).clockDeltaLast = { server: t.serverIso, serverMs: t.serverEpochMs, delta };
-    console.log('[clock] sync /time:', t.serverIso, 'delta(ms):', delta);
+    (window as any).clockDeltaLast = { deltas, chosen: delta };
+    console.log('[clock] deltas(ms):', deltas, 'chosen:', delta);
   } catch (e) {
     console.warn('Falha ao sincronizar com /time; mantendo delta atual.', e);
   }
