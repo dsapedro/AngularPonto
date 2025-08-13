@@ -35,47 +35,45 @@ export class PontoComponent implements OnInit {
     private http: HttpClient
   ) {}
 
-  /** Sincroniza relógio com /time usando ponto médio + mediana de 3 amostras */
-  private async syncClockWithServer(): Promise<void> {
-    const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
-    const url = `${base}/time`;
+  private async syncClockWithServer(): Promise<number> {
+  const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
+  const url = `${base}/time`;
 
-    const sampleOnce = async () => {
-      const t0 = Date.now();
-      const resp = await firstValueFrom(
-        this.http.get<{ serverIso: string; serverEpochMs: number }>(url, {
-          params: { t: String(t0) } // cache busting
-        })
-      );
-      const t1 = Date.now();
-      const server = resp.serverEpochMs;
-      const midpoint = (t0 + t1) / 2; // compensa metade da latência
-      return server - midpoint;       // delta estimado (ms)
-    };
+  const sampleOnce = async () => {
+    const t0 = Date.now();
+    const resp = await firstValueFrom(
+      this.http.get<{ serverIso: string; serverEpochMs: number }>(url, {
+        params: { t: String(t0) } // cache busting
+      })
+    );
+    const t1 = Date.now();
+    const midpoint = (t0 + t1) / 2;
+    return resp.serverEpochMs - midpoint; // delta estimado
+  };
 
-    try {
-      const deltas: number[] = [];
-      deltas.push(await sampleOnce());
-      await new Promise(r => setTimeout(r, 150));
-      deltas.push(await sampleOnce());
-      await new Promise(r => setTimeout(r, 150));
-      deltas.push(await sampleOnce());
+  const median = (arr: number[]) => {
+    const a = [...arr].sort((x, y) => x - y);
+    return a[Math.floor(a.length / 2)];
+  };
 
-      const median = (arr: number[]) => {
-        const a = [...arr].sort((x, y) => x - y);
-        return a[Math.floor(a.length / 2)];
-      };
-      const delta = median(deltas);
+  try {
+    const deltas: number[] = [];
+    deltas.push(await sampleOnce());
+    await new Promise(r => setTimeout(r, 150));
+    deltas.push(await sampleOnce());
+    await new Promise(r => setTimeout(r, 150));
+    deltas.push(await sampleOnce());
 
-      this.clock.setDeltaForTest(delta);
-      (window as any).clockDeltaLast = { deltas, chosen: delta };
-      console.log('[clock] deltas(ms):', deltas, 'chosen:', delta);
-    } catch (e) {
-      console.warn('Falha ao sincronizar com /time; mantendo delta atual.', e);
-      // Se preferir liberar quando falhar, troque a linha abaixo:
-      // this.clock.setDeltaForTest(0);
-    }
+    const delta = median(deltas);
+    this.clock.setDeltaForTest(delta);
+    (window as any).clockDeltaLast = { deltas, chosen: delta };
+    console.log('[clock] deltas(ms):', deltas, 'chosen:', delta);
+    return delta;
+  } catch (e) {
+    console.warn('Falha ao sincronizar com /time; mantendo delta atual.', e);
+    return this.clock.deltaMs ?? 0; // mantém o último
   }
+}
 
   ngOnInit(): void {
     (window as any).clock = this.clock;
