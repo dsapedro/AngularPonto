@@ -35,64 +35,65 @@ export class PontoComponent implements OnInit {
     private http: HttpClient
   ) {}
 
+  /** Sincroniza com /time, aplica mediana (3 amostras) e retorna o delta escolhido (ms). */
   private async syncClockWithServer(): Promise<number> {
-  const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
-  const url = `${base}/time`;
+    const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
+    const url = `${base}/time`;
 
-  const sampleOnce = async () => {
-    const t0 = Date.now();
-    const resp = await firstValueFrom(
-      this.http.get<{ serverIso: string; serverEpochMs: number }>(url, {
-        params: { t: String(t0) } // cache busting
-      })
-    );
-    const t1 = Date.now();
-    const midpoint = (t0 + t1) / 2;
-    return resp.serverEpochMs - midpoint; // delta estimado
-  };
+    const sampleOnce = async () => {
+      const t0 = Date.now();
+      const resp = await firstValueFrom(
+        this.http.get<{ serverIso: string; serverEpochMs: number }>(url, {
+          params: { t: String(t0) } // cache busting
+        })
+      );
+      const t1 = Date.now();
+      const midpoint = (t0 + t1) / 2;     // compensa metade da latência
+      return resp.serverEpochMs - midpoint; // delta estimado (ms)
+    };
 
-  const median = (arr: number[]) => {
-    const a = [...arr].sort((x, y) => x - y);
-    return a[Math.floor(a.length / 2)];
-  };
+    const median = (arr: number[]) => {
+      const a = [...arr].sort((x, y) => x - y);
+      return a[Math.floor(a.length / 2)];
+    };
 
-  try {
-    const deltas: number[] = [];
-    deltas.push(await sampleOnce());
-    await new Promise(r => setTimeout(r, 150));
-    deltas.push(await sampleOnce());
-    await new Promise(r => setTimeout(r, 150));
-    deltas.push(await sampleOnce());
+    try {
+      const deltas: number[] = [];
+      deltas.push(await sampleOnce());
+      await new Promise(r => setTimeout(r, 150));
+      deltas.push(await sampleOnce());
+      await new Promise(r => setTimeout(r, 150));
+      deltas.push(await sampleOnce());
 
-    const delta = median(deltas);
-    this.clock.setDeltaForTest(delta);
-    (window as any).clockDeltaLast = { deltas, chosen: delta };
-    console.log('[clock] deltas(ms):', deltas, 'chosen:', delta);
-    return delta;
-  } catch (e) {
-    console.warn('Falha ao sincronizar com /time; mantendo delta atual.', e);
-    return this.clock.deltaMs ?? 0; // mantém o último
+      const delta = median(deltas);
+      this.clock.setDeltaForTest(delta);
+      (window as any).clockDeltaLast = { deltas, chosen: delta };
+      console.log('[clock] deltas(ms):', deltas, 'chosen:', delta);
+      return delta;
+    } catch (e) {
+      console.warn('Falha ao sincronizar com /time; mantendo delta atual.', e);
+      return this.clock.deltaMs ?? 0; // mantém último valor conhecido
+    }
   }
-}
 
   ngOnInit(): void {
     (window as any).clock = this.clock;
 
-    // 1) Sync inicial (pequeno delay para evitar interferência de SW/caches)
+    // 1) Sync inicial (ligeiro atraso para evitar interferências iniciais)
     setTimeout(() => this.syncClockWithServer(), 250);
 
-    // 2) Re-sync periódico (a cada 5 min)
+    // 2) Re-sync periódico
     setInterval(() => this.syncClockWithServer(), 5 * 60 * 1000);
 
     // 3) Re-sync ao voltar online
     window.addEventListener('online', () => this.syncClockWithServer());
 
-    // 4) Re-sync quando a aba voltar a ficar visível
+    // 4) Re-sync quando a aba volta a ficar visível
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) this.syncClockWithServer();
     });
 
-    // Restante da sua lógica de tela
+    // Restante da tela
     this.marcacoes$ = this.marcacaoService.marcacoes$;
     this.calcularProgresso();
     this.calcularHorasTrabalhadas();
@@ -105,12 +106,26 @@ export class PontoComponent implements OnInit {
   }
 
   async marcarPonto() {
-    // Recalcula delta ANTES de validar/bloquear
-    await this.syncClockWithServer();
+    // -------- Guard de estabilidade do delta --------
+    const d1 = await this.syncClockWithServer();
+    await new Promise(r => setTimeout(r, 120));
+    const d2 = await this.syncClockWithServer();
 
-    if (!this.clock.isWithin(this.CLOCK_TOLERANCE_MS)) {
-      const delta = this.clock.deltaMs!;
-      const deltaMin = Math.round(Math.abs(delta) / 60000);
+    const STABILITY_JITTER_MS = 2000; // tolerância entre leituras em ms
+    let deltaToUse = d2;
+
+    if (Math.abs(d2 - d1) > STABILITY_JITTER_MS) {
+      // leituras instáveis → faz terceira e usa mediana
+      await new Promise(r => setTimeout(r, 200));
+      const d3 = await this.syncClockWithServer();
+      const triplet = [d1, d2, d3].sort((a, b) => a - b);
+      deltaToUse = triplet[1];
+      console.log('[clock] unstable readings, using median of', triplet, '=>', deltaToUse);
+    }
+    // ------------------------------------------------
+
+    if (Math.abs(deltaToUse) > this.CLOCK_TOLERANCE_MS) {
+      const deltaMin = Math.round(Math.abs(deltaToUse) / 60000);
       alert(`Relógio do dispositivo desvia ${deltaMin} min do servidor. Ajuste o relógio/fuso e tente novamente.`);
       return;
     }
@@ -145,15 +160,15 @@ export class PontoComponent implements OnInit {
       return;
     }
 
-    // Fuso (somente alerta no MVP)
+    // Fuso (apenas alerta no MVP)
     const deviceTz = this.geoloc.deviceTimeZone();
     const expectedTz = gf?.expectedTimeZone;
     if (expectedTz && deviceTz !== expectedTz) {
       alert(`Atenção: seu fuso é ${deviceTz}, mas o esperado é ${expectedTz}.`);
-      // se quiser barrar, dê return aqui
+      // para bloquear de fato, dar return aqui
     }
 
-    // Registrar (servidor define a hora oficial)
+    // Registrar (servidor define hora oficial)
     this.marcacaoService.marcarPonto(this.usuario, tipo, {
       lat, lng, accuracyMeters: acc, timeZone: deviceTz, agrupadorId: this.agrupadorId
     });
