@@ -6,6 +6,9 @@ import { Marcacao } from '../services/marcacao.model';
 import { GeolocService } from '../services/geoloc.service';
 import { DEFAULT_GEOFENCE_ID } from '../geofence.config';
 import { ClockService } from '../services/clock.service';
+import { HttpClient, HttpResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-ponto',
@@ -29,7 +32,27 @@ export class PontoComponent implements OnInit {
 
   constructor(private marcacaoService: MarcacaoService,
     private geoloc: GeolocService,
-    private clock: ClockService) {}
+    private clock: ClockService,
+    private http: HttpClient) {}
+  
+  private async syncClockWithServer(): Promise<void> {
+    try {
+      const resp = await firstValueFrom(
+        this.http.get(environment.apiUrl, {
+          // pegamos os headers da resposta
+          observe: 'response' as const,
+          // dica pra evitar cache do navegador/intermediários
+          headers: { 'Cache-Control': 'no-store' } as any
+        })
+      );
+      const dateHeader = resp.headers.get('Date') ?? resp.headers.get('date');
+      this.clock.setFromServerDateHeader(dateHeader);
+    } catch (e) {
+      // se falhar, não bloqueamos — seguimos com delta anterior
+      console.warn('Falha ao sincronizar relógio com servidor', e);
+    }
+  }
+
 
   ngOnInit(): void {
     (window as any).clock = this.clock;
@@ -45,6 +68,8 @@ export class PontoComponent implements OnInit {
   }
 
   async marcarPonto() {
+    await this.syncClockWithServer();
+    
     if (!this.clock.isWithin(this.CLOCK_TOLERANCE_MS)) {
       const delta = this.clock.deltaMs!;
       const deltaMin = Math.round(Math.abs(delta) / 60000);
