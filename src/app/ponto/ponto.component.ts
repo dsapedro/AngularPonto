@@ -35,7 +35,6 @@ export class PontoComponent implements OnInit {
     private http: HttpClient
   ) {}
 
-  /** Sincroniza com /time, aplica mediana (3 amostras) e retorna o delta escolhido (ms). */
   private async syncClockWithServer(): Promise<number> {
     const base = environment.apiUrl.replace(/\/+marcacoes\/?$/i, '');
     const url = `${base}/time`;
@@ -48,8 +47,8 @@ export class PontoComponent implements OnInit {
         })
       );
       const t1 = Date.now();
-      const midpoint = (t0 + t1) / 2;     // compensa metade da latência
-      return resp.serverEpochMs - midpoint; // delta estimado (ms)
+      const midpoint = (t0 + t1) / 2;
+      return resp.serverEpochMs - midpoint; // delta estimado
     };
 
     const median = (arr: number[]) => {
@@ -72,28 +71,38 @@ export class PontoComponent implements OnInit {
       return delta;
     } catch (e) {
       console.warn('Falha ao sincronizar com /time; mantendo delta atual.', e);
-      return this.clock.deltaMs ?? 0; // mantém último valor conhecido
+      return this.clock.deltaMs ?? 0; // mantém o último
     }
+  }
+
+  /** Faz várias syncs em sequência por até maxWaitMs,
+   *  e retorna quando o delta “assentar” (variação < jitter) ou estourar o tempo. */
+  private async stabilizeDelta(maxWaitMs = 15000, jitterMs = 1000): Promise<number> {
+    const tStart = performance.now();
+    let last = await this.syncClockWithServer();
+
+    while (performance.now() - tStart < maxWaitMs) {
+      await new Promise(r => setTimeout(r, 300)); // 0,3s entre leituras
+      const cur = await this.syncClockWithServer();
+
+      if (Math.abs(cur - last) < jitterMs) {
+        return cur; // estabilizou
+      }
+      last = cur;
+    }
+    return last;
   }
 
   ngOnInit(): void {
     (window as any).clock = this.clock;
 
-    // 1) Sync inicial (ligeiro atraso para evitar interferências iniciais)
     setTimeout(() => this.syncClockWithServer(), 250);
-
-    // 2) Re-sync periódico
     setInterval(() => this.syncClockWithServer(), 5 * 60 * 1000);
-
-    // 3) Re-sync ao voltar online
     window.addEventListener('online', () => this.syncClockWithServer());
-
-    // 4) Re-sync quando a aba volta a ficar visível
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) this.syncClockWithServer();
     });
 
-    // Restante da tela
     this.marcacoes$ = this.marcacaoService.marcacoes$;
     this.calcularProgresso();
     this.calcularHorasTrabalhadas();
@@ -106,23 +115,8 @@ export class PontoComponent implements OnInit {
   }
 
   async marcarPonto() {
-    // -------- Guard de estabilidade do delta --------
-    const d1 = await this.syncClockWithServer();
-    await new Promise(r => setTimeout(r, 120));
-    const d2 = await this.syncClockWithServer();
-
-    const STABILITY_JITTER_MS = 2000; // tolerância entre leituras em ms
-    let deltaToUse = d2;
-
-    if (Math.abs(d2 - d1) > STABILITY_JITTER_MS) {
-      // leituras instáveis → faz terceira e usa mediana
-      await new Promise(r => setTimeout(r, 200));
-      const d3 = await this.syncClockWithServer();
-      const triplet = [d1, d2, d3].sort((a, b) => a - b);
-      deltaToUse = triplet[1];
-      console.log('[clock] unstable readings, using median of', triplet, '=>', deltaToUse);
-    }
-    // ------------------------------------------------
+    // Espera o delta estabilizar antes de prosseguir
+    const deltaToUse = await this.stabilizeDelta(15000, 1000);
 
     if (Math.abs(deltaToUse) > this.CLOCK_TOLERANCE_MS) {
       const deltaMin = Math.round(Math.abs(deltaToUse) / 60000);
@@ -150,7 +144,6 @@ export class PontoComponent implements OnInit {
     const lng = position.coords.longitude;
     const acc = position.coords.accuracy;
 
-    // Cercamento
     const { ok, distance, gf } = this.geoloc.isInsideGeofence(lat, lng, this.agrupadorId);
     if (!ok) {
       const msg = gf
@@ -160,15 +153,12 @@ export class PontoComponent implements OnInit {
       return;
     }
 
-    // Fuso (apenas alerta no MVP)
     const deviceTz = this.geoloc.deviceTimeZone();
     const expectedTz = gf?.expectedTimeZone;
     if (expectedTz && deviceTz !== expectedTz) {
       alert(`Atenção: seu fuso é ${deviceTz}, mas o esperado é ${expectedTz}.`);
-      // para bloquear de fato, dar return aqui
     }
 
-    // Registrar (servidor define hora oficial)
     this.marcacaoService.marcarPonto(this.usuario, tipo, {
       lat, lng, accuracyMeters: acc, timeZone: deviceTz, agrupadorId: this.agrupadorId
     });
