@@ -164,15 +164,19 @@ export class PontoComponent implements OnInit {
   }
 
   carregarMarcacoes(): void {
-  const dtAtual = new Date().toDateString();
+  const hojeLocal = new Date();
 
   this.marcacaoService.buscarMarcacoes().subscribe({
     next: (dados) => {
-      this.marcacoes = dados
-        .filter(m => m.usuario === this.usuario && m.data === dtAtual)
+      this.marcacoes = (dados || [])
+        .filter(m => {
+          if (m.usuario !== this.usuario) return false;
+          const d = new Date(m.data); // ISO -> Date
+          return d.toDateString() === hojeLocal.toDateString();
+        })
         .sort((a, b) => {
-          const da = new Date(`${a.data} ${a.hora}`).getTime();
-          const db = new Date(`${b.data} ${b.hora}`).getTime();
+          const da = new Date(a.data).getTime();
+          const db = new Date(b.data).getTime();
           return db - da;
         });
     },
