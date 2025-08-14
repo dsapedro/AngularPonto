@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, catchError, retry, timeout, throwError } from 'rxjs';
 import { Marcacao } from './marcacao.model';
 import { environment } from '../../environments/environment';
+import { OrigemMarcacao } from '../enums/origem-marcacao.enum'; // Importando o enum atualizado
 
 @Injectable({ providedIn: 'root' })
 export class MarcacaoService {
@@ -14,8 +15,8 @@ export class MarcacaoService {
   private isOnline = navigator.onLine;
 
   constructor(private http: HttpClient) {
-    window.addEventListener('online', () => this.syncMarcacoes());
-    window.addEventListener('offline', () => (this.isOnline = false));
+    window.addEventListener(OrigemMarcacao.ONLINE, () => this.syncMarcacoes());
+    window.addEventListener(OrigemMarcacao.OFFLINE, () => (this.isOnline = false));
     this.carregarMarcacoesIniciais();
   }
 
@@ -37,7 +38,7 @@ export class MarcacaoService {
     const body: Partial<Marcacao> = {
       usuario,
       tipo,
-      origem: this.isOnline ? 'online' : 'offline',
+      origem: this.isOnline ? OrigemMarcacao.ONLINE : OrigemMarcacao.OFFLINE,
       ...(extras ?? {}),
     };
 
@@ -46,7 +47,7 @@ export class MarcacaoService {
         next: (salva) => this._marcacoes.next([...this._marcacoes.value, salva]),
         error: (err) => {
           console.error('Erro ao enviar. Salvando localmente.', err);
-          body.origem = 'offline';
+          body.origem = OrigemMarcacao.OFFLINE;
           this.salvarMarcacaoLocal(body as Marcacao);
           alert('Falha ao enviar. Marcação salva localmente.');
         },

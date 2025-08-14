@@ -37,12 +37,12 @@
   </div>
   <div class="status"
      [ngClass]="{
-       integrada: m.origem === 'sincronizado',
-       local:     m.origem === 'offline',
-       online:    m.origem === 'online'
+       integrada: m.origem === OrigemMarcacao.SINCRONIZADO,
+       local:     m.origem === OrigemMarcacao.OFFLINE,
+       online:    m.origem === OrigemMarcacao.ONLINE
      }">
-  {{ m.origem === 'sincronizado' ? '✔️ Integrada'
-      : m.origem === 'offline'   ? '📍 Local'
+  {{ m.origem === OrigemMarcacao.SINCRONIZADO ? '✔️ Integrada'
+      : m.origem === OrigemMarcacao.OFFLINE   ? '📍 Local'
                                  : '🌐 Online' }}
 </div>
 </div>

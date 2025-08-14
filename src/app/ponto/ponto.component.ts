@@ -8,6 +8,7 @@ import { DEFAULT_GEOFENCE_ID } from '../geofence.config';
 import { ClockService } from '../services/clock.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { OrigemMarcacao } from '../enums/origem-marcacao.enum';
 
 @Component({
   selector: 'app-ponto',
@@ -26,6 +27,7 @@ export class PontoComponent implements OnInit {
   marcacoes$!: Observable<Marcacao[]>;
   usuario: string = 'Henrique';
   agrupadorId = DEFAULT_GEOFENCE_ID;
+  OrigemMarcacao = OrigemMarcacao
 
   // tolerância de 2 minutos
   private readonly CLOCK_TOLERANCE_MS = 2 * 60 * 1000;
