@@ -8,15 +8,18 @@ import { DEFAULT_GEOFENCE_ID } from '../geofence.config';
 import { ClockService } from '../services/clock.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { OrigemMarcacao } from '../enums/origem-marcacao.enum';
 
 @Component({
   selector: 'app-ponto',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './ponto.component.html',
   styleUrls: ['./ponto.component.scss']
 })
+
 export class PontoComponent implements OnInit {
   entrada: string = '08:00';
   saidaPrevista: string = '17:00';
@@ -39,8 +42,13 @@ export class PontoComponent implements OnInit {
     private marcacaoService: MarcacaoService,
     private geoloc: GeolocService,
     private clock: ClockService,
-    private http: HttpClient
-  ) {}
+    private http: HttpClient,
+    private router: Router
+  ) 
+  {
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => this.menuAberto = false);
+  }
 
   private sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -260,4 +268,7 @@ export class PontoComponent implements OnInit {
       error: (erro) => console.error('Erro ao buscar marcações:', erro)
     });
   }
+  
+  menuAberto = false;
+  toggleMenu() { this.menuAberto = !this.menuAberto; }
 }

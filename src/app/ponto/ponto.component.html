@@ -1,29 +1,30 @@
 <div class="header">
-  <button class="back-button">←</button>
+  <button class="back" routerLink="/home" aria-label="Voltar">←</button>
   <h2>Marcação de Ponto</h2>
 </div>
 
 <!-- Cartões superiores -->
-<div class="cards">
-  <div class="card">
-    <h4>Hoje</h4>
-    <div class="progress">
-      <label>Progresso</label>
-      <div class="progress-bar">
-        <div class="progress-fill" [style.width.%]="progresso"></div>
+<main>
+  <div class="cards">
+    <div class="card">
+      <h4>Hoje</h4>
+      <div class="progress">
+        <label>Progresso</label>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="progresso"></div>
+        </div>
+        <div class="saida-prevista">Saída prevista <strong>{{ saidaPrevista }}</strong></div>
       </div>
-      <div class="saida-prevista">Saída prevista <strong>{{ saidaPrevista }}</strong></div>
+    </div>
+
+    <div class="card">
+      <h4>Horas trabalhadas</h4>
+      <div class="horas">{{ horasTrabalhadas }}</div>
     </div>
   </div>
 
-  <div class="card">
-    <h4>Horas trabalhadas</h4>
-    <div class="horas">{{ horasTrabalhadas }}</div>
-  </div>
-</div>
-
-<!-- Botão principal -->
-<button class="btn-principal" (click)="marcarPonto()">Marcar Ponto</button>
+  <!-- Botão principal -->
+  <button class="btn-principal" (click)="marcarPonto()">Marcar Ponto</button>
 
 <!-- Lista de marcações -->
 <h4 class="subtitulo">Marcações realizadas</h4>
@@ -41,18 +42,81 @@
        local:     m.origem === OrigemMarcacao.OFFLINE,
        online:    m.origem === OrigemMarcacao.ONLINE
      }">
-  {{ m.origem === OrigemMarcacao.SINCRONIZADO ? '✔️ Integrada'
-      : m.origem === OrigemMarcacao.OFFLINE   ? '📍 Local'
-                                 : '🌐 Online' }}
-</div>
-</div>
-<a href="https://chatwoot.ds3i.com.br/app/accounts/1/dashboard">
-  Abrir AZCV3
-</a>
-<!-- Rodapé -->
-<div class="footer">
-  <div class="icon">📊</div>
-  <div class="icon">💬</div>
-  <div class="icon notificacao">🔔</div>
-  <div class="icon">☰</div>
-</div>
+      {{ m.origem === OrigemMarcacao.SINCRONIZADO ? '✔️ Integrada'
+      : m.origem === OrigemMarcacao.OFFLINE ? '📍 Local'
+      : '🌐 Online' }}
+    </div>
+  </div>
+  <a href="https://chatwoot.ds3i.com.br/app/accounts/1/dashboard">
+    Abrir AZCV3
+  </a>
+</main>
+
+<nav class="bottombar">
+  <a class="nav-btn" routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+    🏠
+    <span>Início</span>
+  </a>
+
+  <a class="nav-btn" routerLink="/mensagens" routerLinkActive="active">
+    💬
+    <span>Mensagens</span>
+  </a>
+
+  <button class="nav-btn" (click)="toggleMenu()">
+    ☰
+    <span>Menu</span>
+  </button>
+</nav>
+
+<!-- Sheet de navegação -->
+<div class="sheet-backdrop" *ngIf="menuAberto" (click)="toggleMenu()"></div>
+<section class="sheet" *ngIf="menuAberto" role="dialog" aria-modal="true">
+  <header class="sheet-header">
+    <h3>Navegação</h3>
+    <button class="close" (click)="toggleMenu()" aria-label="Fechar">✕</button>
+  </header>
+
+  <div class="sheet-list">
+    <a href="https://artezerocode.gruposynesis.com.br/azcv3/main" class="sheet-item"
+      (click)="toggleMenu()">
+      <span>📂</span>
+      <div>
+        <div class="item-title">AZCV3</div>
+        <div class="item-sub">Abrir sistema AZCV3</div>
+      </div>
+    </a>
+
+    <a href="https://chatwoot.ds3i.com.br/app/login" class="sheet-item" (click)="toggleMenu()">
+      <span>💬</span>
+      <div>
+        <div class="item-title">Multicanal</div>
+        <div class="item-sub">Abrir Chatwoot</div>
+      </div>
+    </a>
+
+    <a routerLink="/ponto" class="sheet-item" (click)="toggleMenu()">
+      <span>🕒</span>
+      <div>
+        <div class="item-title">Ponto</div>
+        <div class="item-sub">Acessar marcação</div>
+      </div>
+    </a>
+
+    <a routerLink="/relatorios" class="sheet-item" (click)="toggleMenu()">
+      <span>📊</span>
+      <div>
+        <div class="item-title">Relatórios</div>
+        <div class="item-sub">Em breve</div>
+      </div>
+    </a>
+
+    <a routerLink="/config" class="sheet-item" (click)="toggleMenu()">
+      <span>⚙️</span>
+      <div>
+        <div class="item-title">Configurações</div>
+        <div class="item-sub">Em breve</div>
+      </div>
+    </a>
+  </div>
+</section>

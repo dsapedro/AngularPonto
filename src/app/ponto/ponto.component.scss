@@ -4,9 +4,16 @@
 }
 
 .header {
+  height: 56px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+main {
+  padding: 16px 16px 96px;
 }
 
 .back-button {
@@ -103,37 +110,106 @@
   color: orange;
 }
 
-.footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.topbar {
   height: 56px;
-  background: white;
-  border-top: 1px solid #ccc;
   display: flex;
-  justify-content: space-around;
   align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.icon {
-  position: relative;
-  font-size: 24px;
+.back {
+  background: none;
+  border: 0;
+  font-size: 20px;
   cursor: pointer;
 }
 
-ul {
-  list-style: none;
-  padding: 0;
+.title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
 }
 
-.notificacao .badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: red;
-  color: white;
-  font-size: 12px;
-  border-radius: 50%;
-  padding: 2px 6px;
+.content {
+  padding: 16px 16px 88px;
+}
+
+.nav-btn {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #111827;
+  background: none;
+  border: 0;
+  font-size: 18px;
+  cursor: pointer;
+
+  span {
+    font-size: 11px;
+    color: #6b7280;
+  }
+}
+
+.active span {
+  color: #2563eb;
+}
+
+.bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 900;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.28);
+  z-index: 1000;
+}
+
+.sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 30px rgba(0,0,0,.12);
+  padding: 12px;
+  z-index: 1010;
+  max-height: 75vh;
+  overflow: auto;
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sheet-list {
+  display: grid;
+  gap: 8px;
+  padding: 6px 2px 4px;
+}
+
+.sheet-item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
 }
