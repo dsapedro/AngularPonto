@@ -2,6 +2,14 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.0.1.
 
+# API Mock
+
+To start flux on app, first launch API Mock, for more informations, visit this repository:
+
+```bash
+https://github.com/dsapedro/APIMock#
+```
+
 ## Development server
 
 To start a local development server, run:
