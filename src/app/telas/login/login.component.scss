@@ -1,0 +1,96 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.login-wrapper {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: #f6f7fb; // leve cinza para destacar o card
+  padding: 16px;
+}
+
+.card {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.form-control {
+  display: grid;
+  gap: 6px;
+
+  label {
+    font-size: 14px;
+    color: #374151;
+    font-weight: 600;
+  }
+
+  input {
+    height: 44px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 14px;
+    outline: none;
+    background: #fff;
+
+    &:focus {
+      border-color: #93c5fd; /* azul claro no foco */
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+  }
+}
+
+.btn-primary {
+  margin-top: 6px;
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: #2563eb; /* azul (ajuste depois se quiser) */
+  cursor: pointer;
+  transition: transform 0.04s ease, opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.95;
+  }
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+/* opcional: link auxiliar */
+.link {
+  display: block;
+  margin-top: 12px;
+  text-align: center;
+  color: #2563eb;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
